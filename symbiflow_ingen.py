@@ -4,6 +4,7 @@
 # NOTE: this python script assumes that it will be running in 
 # a terminal session where conda has already been configured and activated
 # the conda commands/conda api are only available in an activated conda env!
+# (run from the symbiflow_ingen_harness script)
 
 # use subprocess directly as conda is best used from the shell
 # we can decide to use "pure python" if needed later (maybe for non-linux?)
@@ -11,10 +12,8 @@
 
 import subprocess
 import json
-#import yaml # use ruamel.yaml instead of pyyaml
-# note that we use ruamel_yaml below because of conda namespace problems!
-from ruamel_yaml import YAML
-from ruamel_yaml.scalarstring import SingleQuotedScalarString
+from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 from pprint import pprint
 from datetime import datetime
 from urllib import request
@@ -27,8 +26,9 @@ import shlex
 
 # global variables! to define behaviors of conda search, conda install etc.
 
-conda_search_common_string="conda search --json --override-channels -c defaults -c conda-forge"
-conda_install_common_string="conda install -y --override-channels -c defaults -c conda-forge"
+conda_search_common_string="conda search --json --override-channels"
+conda_search_fallback_string="conda search --json --override-channels -c conda-forge -c defaults"
+conda_install_common_string="conda install -y --override-channels -c conda-forge -c defaults"
 
 def conda_list():
     proc = subprocess.run(["conda", "list", "--json", "--name"],
@@ -41,7 +41,7 @@ def conda_search(channel, name):
     # if channel is None, then use the fallback channels: defaults and conda-forge
     if(channel == None):
 
-        proc = subprocess.run(shlex.split(conda_search_common_string) + name,
+        proc = subprocess.run(shlex.split(conda_search_fallback_string) + name,
                 text=True, capture_output=True)
 
     else:
@@ -60,6 +60,20 @@ def pip_install(package):
     proc = subprocess.run(["pip", "install", package],
                text=True, capture_output=True)
     return json.loads(proc.stdout)
+
+
+def conda_create_env(environment_yml_path):
+    proc = subprocess.run(["conda", "create" "-f", environment_yml_path, "--json"],
+               text=True, capture_output=True)
+    #return json.loads(proc.stdout)
+
+
+def conda_get_package_version(environment_name, package_name):
+
+    proc = subprocess.run(["conda", "activate", environment_name, "&&" "conda", "list", "-f", package_name, "--json"],
+               text=True, capture_output=True)
+    return json.loads(proc.stdout)
+
 
 def conda_get_latest_package(channel, name):
 
@@ -212,6 +226,7 @@ def arch_defs_package_get_latest_version(repo, branch):
 
     for commit_sha1 in commits_json["commits"]:
 
+        # TODO: revisit this -> use git inbuilt function to get short sha1:
         commit_sha1_short = commit_sha1[:7]
         # print()
         # print(commit_sha1)
@@ -256,25 +271,13 @@ def test__arch_defs_package_get_latest_version():
 
 
 # main functions
-# 1. check package spec and version updates, create package update spec
-# 2. use the package update spec, compare to package current spec and generate installer script
-
-
-def process_package_spec(installer_package_spec_yaml_file):
+def process_package_spec(package_spec_file, package_updates_file):
 
     yaml = YAML()
     yaml.preserve_quotes = True
 
-    with open(installer_package_spec_yaml_file, "r") as stream:
+    with open(package_spec_file, "r") as stream:
         
-        # pyyaml - replaced with ruamel.yaml
-        # try:
-        #     installer_package_spec_yaml = yaml.safe_load(stream)
-        
-        # except yaml.YAMLError as exc:
-        #     print(exc)
-        #     exit(1)
-
         installer_package_spec_yaml = yaml.load(stream)
 
     #pprint(installer_package_spec_yaml)
@@ -285,6 +288,8 @@ def process_package_spec(installer_package_spec_yaml_file):
         # 1. we have a specific "working-version" (not null)
         # AND
         # 2. the package is marked to be updated "update-to-latest" (is true)
+
+        if ( (package_yaml["use-version"] == None)
 
         if(package_spec_yaml["working-version"] == None):
             # we don't care whether we update this package or not
@@ -299,26 +304,35 @@ def process_package_spec(installer_package_spec_yaml_file):
             continue
 
         if(package_spec_yaml["update-to-latest"] == False):
-            # this package should not be updated to latest version
+            # this package should *not* be updated to latest version
 
             print()
             print("-------------------")
             print(package_spec_yaml["name"], "[SKIPPED]")
-            print("this package should not be updated")
+            print("this package should *not* be updated")
             print("-------------------")
             print()
 
             continue
 
-        
 
         if(package_spec_yaml["type"] == "conda"):
 
             latest_package_json = conda_get_latest_package(channel=package_spec_yaml["channel"],
                                                     name=package_spec_yaml["name"])
 
-            latest_version = latest_package_json["version"]            
+            latest_version = latest_package_json["version"]
             package_spec_yaml["latest-version"] = SingleQuotedScalarString(latest_version)
+
+            # for conda packages of subtype "gh-ci", we can get the commit URL corresponding 
+            # to the conda version :
+            if(package_spec_yaml["subtype"] == "gh-ci"):
+
+                gh_commit_sha1 = latest_version.split("_")[-1].replace('g','')
+                gh_commit_url = package_spec_yaml["repo"] + "/commit/" + gh_commit_sha1
+
+                # add this url to the comment field
+                package_spec_yaml["comment"] = gh_commit_url
 
         elif(package_spec_yaml["type"] == "pip"):
 
@@ -348,7 +362,7 @@ def process_package_spec(installer_package_spec_yaml_file):
             elif(package_spec_yaml["subtype"] == "arch-defs"):
 
                 latest_commit_sha1 = arch_defs_package_get_latest_version(package_spec_yaml["repo"],
-                                                            package_spec_yaml["branch"])
+                                                                            package_spec_yaml["branch"])
                 package_spec_yaml["latest-version"] = SingleQuotedScalarString(latest_commit_sha1)
 
             else:
@@ -359,10 +373,11 @@ def process_package_spec(installer_package_spec_yaml_file):
 
         else:
 
-            print("unknown package type in spec!")
+            print("ERROR: unknown package type in spec!")
+            print()
             pprint(package_spec_yaml)
 
-    with open("installer_package_updates.yaml", "w") as stream:
+    with open(package_updates_file, "w") as stream:
         
         # pyyaml - replaced with ruamel.yaml
         # try:
@@ -375,35 +390,8 @@ def process_package_spec(installer_package_spec_yaml_file):
         yaml.dump(installer_package_spec_yaml, stream)
 
 
-def create_installer_package(install_command_strings):
-
-    # use the template, create a new installer package with the list of 
-    # package install commands generated by process_package_updates
-
-
-    with open("symbiflow_package_installer_template.sh", "r") as istream:
-
-        with open("symbiflow_package_installer_updates.sh", "w") as ostream:
-
-            for line in istream:
-
-                if(line.__contains__("!!INGEN TEMPLATE PLACEHOLDER!!")):
-
-                    # insert the set of commands here.
-                    for command_string in install_command_strings:
-                        ostream.write(command_string + "\n")
-
-                else:
-
-                    ostream.write(line)
-
-    # done creating new installer script.
-
-
-
-def process_package_updates(installer_package_updates_yaml_file):
-    pass
-
+def check_if_package_updates_available(package_updates_file, package_current_file):
+        
     # compare the updates yaml to the current yaml
     # if current yaml does not exist, this is the first time we are running, proceed
     # if updates yaml has differences in "latest-version" fields AND update-to-latest is true, proceed
@@ -415,10 +403,12 @@ def process_package_updates(installer_package_updates_yaml_file):
     
     # check if current_yaml exists?
 
+    updated_installer_required = False
+
     yaml = YAML()
     yaml.preserve_quotes = True
 
-    with open(installer_package_updates_yaml_file, "r") as stream:
+    with open(package_updates_file, "r") as stream:
         
         # pyyaml - replaced with ruamel.yaml
         # try:
@@ -430,20 +420,37 @@ def process_package_updates(installer_package_updates_yaml_file):
 
         installer_package_updates_yaml = yaml.load(stream)
 
-    updated_installer_required = False
+        if(pathlib.Path(package_current_file).is_file()):
 
-    if(pathlib.Path("installer_package_current.yaml").is_file()):
+            pass
+            # if versions differ, then updated installer required. TODO processing this.
 
-        pass
-        # if versions differ, then updated installer required. TODO.
+        else:
 
-    else:
+            updated_installer_required = True
 
-        updated_installer_required = True
+    
+    return updated_installer_required
 
 
+def process_package_updates(package_updates_file,
+                            installer_script_template_file,
+                            installer_script_updates_file):
 
-    if(updated_installer_required):
+    yaml = YAML()
+    yaml.preserve_quotes = True
+
+    with open(package_updates_file, "r") as stream:
+        
+        # pyyaml - replaced with ruamel.yaml
+        # try:
+        #     installer_package_spec_yaml = yaml.safe_load(stream)
+        
+        # except yaml.YAMLError as exc:
+        #     print(exc)
+        #     exit(1)
+
+        installer_package_updates_yaml = yaml.load(stream)
 
         install_command_strings = []
 
@@ -566,7 +573,25 @@ def process_package_updates(installer_package_updates_yaml_file):
             print(command)
         print()
 
-        return install_command_strings
+    
+    # use the template, create a new installer package with the list of 
+    # package install commands generated by process_package_updates
+
+    with open(installer_script_template_file, "r") as istream:
+
+        with open(installer_script_updates_file, "w") as ostream:
+
+            for line in istream:
+
+                if(line.__contains__("!!INGEN TEMPLATE PLACEHOLDER!!")):
+
+                    # insert the set of commands here.
+                    for command_string in install_command_strings:
+                        ostream.write(command_string + "\n")
+
+                else:
+
+                    ostream.write(line)
 
 
 def display_logo():
@@ -601,47 +626,71 @@ if (__name__ == "__main__"):
     #exit(0)
 
 
+    ingen_installer_package_spec_file = "installer_package_spec.yaml"           # spec
+    ingen_installer_package_updates_file = "installer_package_updates.yaml"     # ephemeral file after checking for updates
+    ingen_installer_package_current_file = "installer_package_current.yaml"     # file holding the current installer details
+
+    ingen_installer_script_template_file = "symbiflow_package_installer_template.sh"                # template installer script
+    ingen_installer_script_updates_file = "symbiflow_package_installer_updates.sh"      # updates installer script
+
+
     # [1] process spec
-    # input = spec YAML, output = updates YAML
-    # process "spec" YAML -> create "updates" YAML (check for new updates in conda/pip/gh...)
-    #
-    # [2] process updates
-    # input = updates YAML, output = True/False + COMMANDS (create new installer)
-    # check "updates" vs "current" (if "current" exists)
-    # any version changes (or no "current") -> create new installer
-    #
-    # [3] create installer, test run
-    # input = COMMANDS?, output = True/False (installation, test results generate csv)
-    # run installer in new location, check basic test
-    #
-    # [4] installer CI
-    # input = installer location, output = True/False (test results, generate csv)
-    # run CI with new package
-    #
-    # [5] update installer status
-    # input = installation result, basic test result, CI result
-    # output = ?
-    # OK ? installer marked green, saved to some location
-    # NOT OK ? installer marked red, removed. save spec as "last_failed" ?
-    # update CI test results in csv
-    # update installer history in csv
-    # convert csv to md -> github upload?
+    # input         = spec YAML
+    # process       = from spec, check for new updates in conda/pip/gh according to spec rules
+    # output        = updates YAML
+    process_package_spec(package_spec_file=ingen_installer_package_spec_file, 
+                         package_updates_file=ingen_installer_package_updates_file)
+
+    exit(0)
 
 
-    # installer_package_updates_yaml = process_package_spec("installer_package_spec.yaml")
-    # should_create_new_installer = process_package_updates(installer_package_updates_yaml)
-    # create_installer_ok = create_installer_package(installer_package_updates_yaml, installer_package_working_dir)
-    # installation_ok = 
-    # CI_tests_ok =
-    # publish_installer ... done.
-    process_package_spec("installer_package_spec.yaml")
-    generated_command_stringlist = process_package_updates("installer_package_updates.yaml")
-    create_installer_package(generated_command_stringlist)
+    # [2] check for updates
+    # input         = updates YAML, current YAML
+    # process       =   - if updates YAML has > versions than current YAML according to spec rules,
+    #                   new installer needs to be created according to updates YAML
+    #                   - if current YAML does not exist, new installer needs to be created
+    #                   - otherwise, nothing to do - ingen flow finished here.
+    # output        = True/False
+    updated_installer_required = check_if_package_updates_available(package_updates_file=ingen_installer_package_updates_file, 
+                                                                    package_current_file=ingen_installer_package_current_file)
+
+    if(updated_installer_required == False):
+        
+        print("no updates, nothing to do.")
+
+        exit(0)
 
 
+    # [3] process updates
+    # input         = COMMANDS?
+    # process       = process updates yaml -> generate installer script from template
+    # output        = updates installer script
+
+    process_package_updates(package_updates_file=ingen_installer_package_updates_file,
+                            installer_script_template_file=ingen_installer_script_template_file,
+                            installer_script_updates_file=ingen_installer_script_updates_file)
 
 
+    # done creating installer script, next steps will be done by the harness script.
+
+    # [4] generate self extracting installer
+
+    # [5] installer 'base' tests
+    # input         = installer location
+    # process       = Run 'base' test suite on installer, generate results
+    # output        = True/False
+    
+    
+    # [6] installer 'CI' tests
+    # input         = installer location
+    # process       = Run 'CI' test suite on installer, generate results
+    # output        = test results, logs
 
 
-
-
+    # [7] update installer and status (publish)
+    # input = installer path, CI test results
+    # process = now updates YAML becomes new current YAML, and to be committed
+    #           installer is also to be committed
+    #           test result logs to be saved/emailed
+    #           test results table to be committed
+    # installer -> DATE, test results table -> DATE

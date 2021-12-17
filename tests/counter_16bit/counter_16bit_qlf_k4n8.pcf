@@ -1,0 +1,3 @@
+set_io clk  user_IN_B[0]
+set_io enable  user_IN_B[1]
+set_io reset user_IN_B[2]
