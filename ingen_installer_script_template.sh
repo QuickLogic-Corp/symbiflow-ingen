@@ -112,7 +112,9 @@ CMD_STRING_LIST+=("export PATH=\"\$INSTALL_DIR/quicklogic-arch-defs/bin:\$PATH\"
 CMD_STRING_LIST+=("export PATH=\"\$INSTALL_DIR/quicklogic-arch-defs/bin/python:\$PATH\"")
 CMD_STRING_LIST+=("source \"\$INSTALL_DIR/conda/etc/profile.d/conda.sh\"")
 CMD_STRING_LIST+=("conda activate \${INSTALL_DIR}/conda/envs/quicklogic")
-CMD_STRING_LIST+=("echo \"Quicklogic Symbiflow Package Env Activated\"")
+CMD_STRING_LIST+=("echo \"\"")
+CMD_STRING_LIST+=("echo \"[>> Quicklogic Symbiflow Package Env Activated <<]\"")
+CMD_STRING_LIST+=("echo \"\"")
 
 echo "# Quicklogic Symbiflow Package Env Init Script" > "$SYMBIFLOW_CONDA_INIT_SCRIPT"
 

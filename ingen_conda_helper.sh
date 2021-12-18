@@ -183,6 +183,8 @@ function test_local_conda_env() {
         [ "$PIP_PATH" == "$EXPECTED_PIP_PATH" ] ; then
 
         echo
+        echo "conda setup looks ok:"
+        echo
         echo "$CONDA_VERSION"
         echo "$PYTHON_VERSION"
         echo "$PIP_VERSION"
@@ -190,14 +192,13 @@ function test_local_conda_env() {
 
         CONDA_SETUP_INSTALL_OK="$TRUE_VAL"
 
-        echo
-        echo "conda setup looks ok"
+        
         echo
 
     else
 
+        echo
         echo "conda setup is incorrect, check the script flow!"
-
         echo
         echo "conda"
         echo "got:     " "$CONDA_PATH"
