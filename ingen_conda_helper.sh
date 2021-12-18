@@ -88,9 +88,6 @@ function setup_local_conda_install() {
     # remove the conda installer binary
     rm -f "$MINICONDA_INSTALLER"
 
-
-    echo "conda install complete."
-
     # indicate ok
     return 0
 }

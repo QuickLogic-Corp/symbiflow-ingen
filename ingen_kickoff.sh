@@ -16,7 +16,8 @@
 
 # export the env variables that we want all the other scripts to use
 
-export INGEN_ROOT_DIR="$PWD"
+# note that this won't work with scripts in the PATH, but that is not what we are going for, right?
+export INGEN_ROOT_DIR=$(cd `dirname $0` && pwd)
 export INGEN_SCRIPTS_DIR="$INGEN_ROOT_DIR"
 
 export CURRENT_DATE=$(date +%d_%b_%Y)
@@ -38,7 +39,7 @@ echo "[>> INGEN : Quicklogic Symbiflow Package Installer Generator <<]"
 echo
 
 echo
-echo "[>> INGEN <<] KickOff: ${CURRENT_DATE} ${CURRENT_TIME} HRS"
+echo "[>> INGEN <<] kickoff: ${CURRENT_DATE} ${CURRENT_TIME} HRS"
 echo
 
 
@@ -47,7 +48,8 @@ echo
 # PART A : Check for package updates, and generate a new Symbiflow Package Installer
 ##########################################################################################
 echo
-echo "[>> INGEN <<] Generate Package Installer ... STARTED!"
+echo "[>> INGEN <<] generate package installer ... STARTED!"
+echo
 
 bash "${INGEN_ROOT_DIR}/ingen_generate_package_installer.sh"
 INGEN_GENERATE_PACKAGE_INSTALLER_STATUS=$?
@@ -55,12 +57,12 @@ INGEN_GENERATE_PACKAGE_INSTALLER_STATUS=$?
 if [ $INGEN_GENERATE_PACKAGE_INSTALLER_STATUS == 0 ] ; then
 
     echo
-    echo "[>> INGEN <<] Generate Package Installer ... OK."
+    echo "[>> INGEN <<] generate package installer [OK]"
 
 else
 
     echo
-    echo "[>> INGEN <<] Generate Package Installer ... FAILED!"
+    echo "[>> INGEN <<] generate package installer [FAILED!]"
     exit 1
 
 fi
@@ -73,7 +75,8 @@ fi
 # bash shell context, so it does not have stuff in the current shell by ingen!
 
 echo
-echo "[>> INGEN <<] Test Package Installer ... STARTED!"
+echo "[>> INGEN <<] test package installer ... STARTED!"
+echo
 
 bash "${INGEN_ROOT_DIR}/ingen_test_package_installer.sh" "$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE" \
                                                          "$INGEN_SYMBIFLOW_TESTING__INSTALL_DIR" \
@@ -83,12 +86,14 @@ INGEN_TEST_PACKAGE_INSTALLER_STATUS=$?
 if [ $INGEN_TEST_PACKAGE_INSTALLER_STATUS == 0 ] ; then
 
     echo
-    echo "[>> INGEN <<] Test Package Installer ... OK."
+    echo "[>> INGEN <<] test package installer ... [OK]"
+    echo
 
 else
 
     echo
-    echo "[>> INGEN <<] Test Package Installer ... FAILED!"
+    echo "[>> INGEN <<] test package installer ... [FAILED!]"
+    echo
     exit 1
 
 fi
