@@ -28,33 +28,33 @@ Each release version corresponds to a specific date on which the package install
 
 ## Structure
 
-├── `README.md` `this file`
-
-├── ingen_kickoff.sh `main wrapper file`
-├── ingen_generate_package_installer.sh `checks for updates and generates a package installer`
-├── ingen_test_package_installer.sh `runs the package installer through sanity (k6n10, k4n8, eoss3, pp3)`
-├── ingen_publish_package_installer.sh `publishes the package installer as a Github Release`
-
-├── ingen_conda_helper.sh `helper bash script with conda commands wrapped`
-├── ingen_git_get_commit_list.sh `helper bash script to get git repo info`
-
-├── ingen_requirements.txt `conda (pip) requirements.txt spec for the INGEN env`
-├── ingen_environment.yml `conda environment.yml spec for the INGEN env`
-
-├── ingen_generate_package_updates.py `helper py script to generate updated dependencies`
-├── ingen_check_for_updates.py `helper py script to analyze generated updated dependencies`
-├── ingen_generate_conda_env_configuration.py `helper py script to generate a conda env for the package installer`
-├── ingen_generate_installer_script.py `helper py script to generate installer script from a template`
-
-├── ingen_package_spec.yml `base spec to describe every dependency of the package installer`
-├── ingen_package_current.yml `current versions of every dependency in the base spec at the latest release`
-├── ingen_installer_script_template.sh `template for final package installer script`
-
-├── installers
-    ├── dailybuild `all package installers are available here`
-├── makeself-2.3.1.run `util to create the final self-extracting package installer`
-└── tests `sanity tests for package installer`
-
+├── `README.md` `this file`  
+  
+├── ingen_kickoff.sh `main wrapper file`  
+├── ingen_generate_package_installer.sh `checks for updates and generates a package installer`  
+├── ingen_test_package_installer.sh `runs the package installer through sanity (k6n10, k4n8, eoss3, pp3)`  
+├── ingen_publish_package_installer.sh `publishes the package installer as a Github Release`  
+  
+├── ingen_conda_helper.sh `helper bash script with conda commands wrapped`  
+├── ingen_git_get_commit_list.sh `helper bash script to get git repo info`  
+  
+├── ingen_requirements.txt `conda (pip) requirements.txt spec for the INGEN env`  
+├── ingen_environment.yml `conda environment.yml spec for the INGEN env`  
+  
+├── ingen_generate_package_updates.py `helper py script to generate updated dependencies`  
+├── ingen_check_for_updates.py `helper py script to analyze generated updated dependencies`  
+├── ingen_generate_conda_env_configuration.py `helper py script to generate a conda env for the package installer`  
+├── ingen_generate_installer_script.py `helper py script to generate installer script from a template`  
+  
+├── ingen_package_spec.yml `base spec to describe every dependency of the package installer`  
+├── ingen_package_current.yml `current versions of every dependency in the base spec at the latest release`  
+├── ingen_installer_script_template.sh `template for final package installer script`  
+  
+├── installers  
+    ├── dailybuild `all package installers are available here`  
+├── makeself-2.3.1.run `util to create the final self-extracting package installer`  
+└── tests `sanity tests for package installer`  
+  
 
 ## Workflow
 
