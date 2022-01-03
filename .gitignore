@@ -6,6 +6,8 @@
 /conda
 # conda installer
 Miniconda3-*-Linux-x86_64.sh
+# temporary dir to keep the ingen builder env data needed
+/builder_data
 # temporary location to place all the installer files before generating the installer
 /symbiflow_installer
 # temporary location to test the installer in the root dir

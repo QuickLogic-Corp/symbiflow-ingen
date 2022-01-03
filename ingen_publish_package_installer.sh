@@ -398,6 +398,7 @@ echo "Y" | gh auth logout --hostname github.com
 
 # checkout default branch and fetch new tags
 git checkout "$DEFAULT_BRANCH_NAME"
+git pull
 git fetch --tags origin
 
 

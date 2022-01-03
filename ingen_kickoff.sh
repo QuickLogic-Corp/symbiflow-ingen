@@ -53,6 +53,17 @@ echo "[>> INGEN <<] kickoff: ${CURRENT_DATE} ${CURRENT_TIME} HRS"
 echo
 
 
+# sanity check if we have already run the the ingen process today:
+if [ -f "$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE" ] ; then
+    echo
+    echo "[>> INGEN <<] package installer already exists:"
+    echo "      $INGEN_SYMBIFLOW_INSTALLER_ARCHIVE"
+    echo "      the ingen process has already run for this date, nothing to do."
+    echo
+
+    exit 0
+fi
+
 
 ##########################################################################################
 # PART A : Check for package updates, and generate a new Symbiflow Package Installer
@@ -61,7 +72,7 @@ echo
 echo "[>> INGEN <<] generate package installer ... STARTED!"
 echo
 
-bash "${INGEN_ROOT_DIR}/ingen_generate_package_installer.sh" "dev"
+bash "${INGEN_ROOT_DIR}/ingen_generate_package_installer.sh"
 INGEN_GENERATE_PACKAGE_INSTALLER_STATUS=$?
 
 if [ $INGEN_GENERATE_PACKAGE_INSTALLER_STATUS == 0 ] ; then

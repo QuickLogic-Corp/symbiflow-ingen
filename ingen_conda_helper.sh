@@ -59,11 +59,17 @@ function setup_local_conda_install() {
     CONDA_INSTALL_DIR=$1
 
     # get the conda installer
-    echo
-    echo "downloading miniconda installer ..."
-    wget -q "$MINICONDA_BASE_URL/$MINICONDA_INSTALLER" -O "$MINICONDA_INSTALLER"
-    echo "done"
-    echo
+    if [ ! -f "$MINICONDA_INSTALLER" ] ; then
+        echo
+        echo "downloading miniconda installer ..."
+        wget -q "$MINICONDA_BASE_URL/$MINICONDA_INSTALLER" -O "$MINICONDA_INSTALLER"
+        echo "done"
+        echo
+    else
+        echo
+        echo "using existing installer: $MINICONDA_INSTALLER"
+        echo
+    fi
 
     # install the conda environment into the local_dir/conda
     # -b: batch mode/no PATH modifications, -p: use prefix for conda install
@@ -85,8 +91,8 @@ function setup_local_conda_install() {
     # (no need as local only conda install)
     #conda config --set auto_activate_base false
 
-    # remove the conda installer binary
-    rm -f "$MINICONDA_INSTALLER"
+    # remove the conda installer binary - leave it in place so we don't have to redownload every time.
+    #rm -f "$MINICONDA_INSTALLER"
 
     # indicate ok
     return 0

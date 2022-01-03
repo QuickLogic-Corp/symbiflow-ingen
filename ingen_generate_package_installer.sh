@@ -83,22 +83,23 @@ fi
 # function : clean all the artifacts produced during the ingen process
 ##########################################################################################
 function ingen_cleanup() {
+    # skipped doing this, so that we have the outputs if we need to debug, otherwise it is ignored anyway.
     # cleanup the ingen_builder artifacts in the INGEN_BUILDER_DATA_DIR, if not in dev mode
-    if [ "$DEVELOPMENT_MODE_ENABLED" == "$FALSE_VAL" ] ; then
+    # if [ "$DEVELOPMENT_MODE_ENABLED" == "$FALSE_VAL" ] ; then
         
-        # check for existing builder data dir
-        if [ -d "$INGEN_BUILDER_DATA_DIR" ] ; then
+    #     # check for existing builder data dir
+    #     if [ -d "$INGEN_BUILDER_DATA_DIR" ] ; then
 
-            # clean it up
-            echo ""
-            echo "[>> INGEN <<] clean up ingen builder data in:" 
-            echo "    $INGEN_BUILDER_DATA_DIR"
-            echo ""
+    #         # clean it up
+    #         echo ""
+    #         echo "[>> INGEN <<] clean up ingen builder data in:" 
+    #         echo "    $INGEN_BUILDER_DATA_DIR"
+    #         echo ""
 
-            rm -rf "$INGEN_BUILDER_DATA_DIR"
+    #         rm -rf "$INGEN_BUILDER_DATA_DIR"
 
-        fi
-    fi
+    #     fi
+    # fi
 
 
     # cleanup conda installation at the end, if not in dev mode
