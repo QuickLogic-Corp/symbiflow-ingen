@@ -442,7 +442,7 @@ if [ $PACKAGE_UPDATE_AVAILABLE == 0 ] ; then
     echo "[>> INGEN <<] no new updates are available, nothing to do."
     echo "[>> INGEN <<] exiting."
     ingen_cleanup
-    exit 0
+    exit 2 # indicate ok, but nothing further to do, to wrapper script
 
 fi
 

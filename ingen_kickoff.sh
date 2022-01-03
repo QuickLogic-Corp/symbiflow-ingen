@@ -80,6 +80,12 @@ if [ $INGEN_GENERATE_PACKAGE_INSTALLER_STATUS == 0 ] ; then
     echo
     echo "[>> INGEN <<] generate package installer [OK]"
 
+elif [ $INGEN_GENERATE_PACKAGE_INSTALLER_STATUS == 2 ] ; then
+
+    echo
+    echo "[>> INGEN <<] no new updates available, no need to generate package installer [OK]"
+    exit 0
+
 else
 
     echo
