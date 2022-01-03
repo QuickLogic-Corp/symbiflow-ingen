@@ -198,7 +198,7 @@ echo
 # STEP 5 : create PR to merge installer to default branch
 ##########################################################################################
 # create PR
-PR_TITLE="[INGEN] add new release: ${RELEASE_NAME}"
+PR_TITLE="[INGEN] add new release: ${INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_NAME}"
 PR_BODY="[INGEN] auto created PR for adding a new release."
 PR_HEAD="$RELEASE_BRANCH_NAME"
 PR_BASE="$DEFAULT_BRANCH_NAME"
@@ -312,7 +312,7 @@ if [ ! "$GHA_MODE_ENABLED" == "$TRUE_VAL" ] ; then
     # STEP 6d : publish release
     ##########################################################################################
     RELEASE_NOTES_FILE="${INGEN_ROOT_DIR}/symbiflow_installer/package_changelog.txt"
-    RELEASE_TITLE="release ${NEW_VERSION} : ${RELEASE_NAME}"
+    RELEASE_TITLE="${NEW_VERSION} : ${INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_NAME}"
     GH_RELEASE_URL=$(gh release create --title "$RELEASE_TITLE" \
                                         --notes-file "$RELEASE_NOTES_FILE" \
                                         --target "$DEFAULT_BRANCH_NAME" \

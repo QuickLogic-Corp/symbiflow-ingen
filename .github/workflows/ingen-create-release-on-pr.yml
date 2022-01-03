@@ -50,7 +50,7 @@ jobs:
           ALL_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
           IS_ANY_FILE_CHANGED=$(git diff --quiet ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} || echo yes)
           echo "ALL_CHANGES=$ALL_CHANGES"
-          
+
           echo "IS_ANY_FILE_CHANGED=$IS_ANY_FILE_CHANGED" >> $GITHUB_ENV
 
       
@@ -163,7 +163,7 @@ jobs:
           chmod +x "${{ env.RELEASE_FILE }}"
           "${{ env.RELEASE_FILE }}" --noexec --target ${{ env.TEMP_INSTALLER_EXTRACT_PATH }}
 
-          RELEASE_TITLE="[INGEN] release ${NEW_VERSION}"
+          RELEASE_TITLE="${NEW_VERSION} : ${{ env.RELEASE_FILENAME }}"
           RELEASE_NOTES_FILE="${{ env.TEMP_INSTALLER_EXTRACT_PATH }}/package_changelog.txt"
           gh release create --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE" --target ${{ env.DEFAULT_BRANCH }} "$NEW_VERSION" "${{ env.RELEASE_FILE }}"
           GH_RELEASE_STATUS=$?
