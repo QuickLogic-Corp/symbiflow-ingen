@@ -25,7 +25,7 @@ jobs:
       RELEASES_DIR: 'installers/dailybuild'
       # note that this path is already in .gitignore, so we can use it:
       TEMP_INSTALLER_EXTRACT_PATH: 'symbiflow_installer'
-      IS_RELEASES_CHANGED: 'no'
+      IS_RELEASE_CHANGED: 'no'
       DEFAULT_BRANCH: 'master'
 
     steps:
@@ -129,7 +129,7 @@ jobs:
         run:  |
           git checkout ${{ env.DEFAULT_BRANCH }} && git fetch
 
-          CURRENT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null`
+          CURRENT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null || true`
           if [ -z $CURRENT_VERSION ] ; then
               
               CURRENT_VERSION="v0.0.0"
