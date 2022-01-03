@@ -111,7 +111,7 @@ package_list:
   channel: defaults
   use-version: null
   working-version: null
-  latest-version: '4.7.1'
+  latest-version: '4.6.3'
   comment: null
 
 - type: conda
@@ -184,10 +184,10 @@ package_list:
   use-version: latest
   working-version: 'd46f204fac69f0dbb866686fbd3b6fdeacfefc87'
   working-version-short: 'd46f204'
-  latest-version: '93a43d9749addc595f6c5d64550578f4e440236b'
-  latest-version-short: '93a43d9'
+  latest-version: 'ed05f64b973ca1584f2caa3df5f02fed38cff322'
+  latest-version-short: 'ed05f64'
   tarball-url-format: https://storage.googleapis.com/symbiflow-arch-defs-install/quicklogic-arch-defs-qlf-!!commit-sha1-short!!.tar.gz
-  comment: '2021-12-21 Merge pull request #728 from antmicro/rework_bidir'
+  comment: '2021-12-14 Merge pull request #723 from QuickLogic-Corp/eoss3-wrappers-install-addition'
 
 - type: gh
   subtype: pip
