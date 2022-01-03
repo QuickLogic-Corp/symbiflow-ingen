@@ -1,6 +1,13 @@
-# Symbiflow Package Installer Generator
+# Symbiflow Package Installer Generator (INGEN)
 
-## Notes
+This repo contains a set of scripts which automates the process of creating a symbiflow package installer, also called a symbiflow dailybuild.  
+
+This is meant to be run periodically (nightly) on any machine - which will check for updates, create and sanity test a new package installer and then will publish it (if all ok) to github as a `release`.  
+
+The release versions start at `v2.2.0` to avoid using any of the older versions which are already in use.  
+Each release version corresponds to a specific date on which the package installer was published on github.  
+
+## Developer Notes
 
 1. use `environment.yml` and `requirements.txt` for installing conda environments rather than 
    installing each package separately using `conda install <package>` because the env solver 
@@ -12,60 +19,69 @@
    This will use the env solver and we get the right packages as we would get when we actually 
    execute the installer later, `conda search` depends on the search factors used, and we cannot 
    really specify all the factors easily.  
+   `conda search` was not meant to be a user spec driven tool, unfortunately.
    Once the packages are installed, query their versions and build the installer.
+
+3. use an existing conda env and update it simply by using a newer `environment.yml` and `requirements.txt` 
+   rather than deleting the conda env and recreating it with the newer files.
+
+
+## Structure
+
+├── `README.md` `this file`
+
+├── ingen_kickoff.sh `main wrapper file`
+├── ingen_generate_package_installer.sh `checks for updates and generates a package installer`
+├── ingen_test_package_installer.sh `runs the package installer through sanity (k6n10, k4n8, eoss3, pp3)`
+├── ingen_publish_package_installer.sh `publishes the package installer as a Github Release`
+
+├── ingen_conda_helper.sh `helper bash script with conda commands wrapped`
+├── ingen_git_get_commit_list.sh `helper bash script to get git repo info`
+
+├── ingen_requirements.txt `conda (pip) requirements.txt spec for the INGEN env`
+├── ingen_environment.yml `conda environment.yml spec for the INGEN env`
+
+├── ingen_generate_package_updates.py `helper py script to generate updated dependencies`
+├── ingen_check_for_updates.py `helper py script to analyze generated updated dependencies`
+├── ingen_generate_conda_env_configuration.py `helper py script to generate a conda env for the package installer`
+├── ingen_generate_installer_script.py `helper py script to generate installer script from a template`
+
+├── ingen_package_spec.yml `base spec to describe every dependency of the package installer`
+├── ingen_package_current.yml `current versions of every dependency in the base spec at the latest release`
+├── ingen_installer_script_template.sh `template for final package installer script`
+
+├── installers
+    ├── dailybuild `all package installers are available here`
+├── makeself-2.3.1.run `util to create the final self-extracting package installer`
+└── tests `sanity tests for package installer`
+
 
 ## Workflow
 
-1. `ingen_harness.sh` [1] &rarr; kicks off the process by installing a new conda env named 
-   `ingen` with `python 3.7`.  
-   The `ingen` env contains the necessary tools for the ingen workflow, such as `git`, 
-   `pip`, `jq` and more.
-   
-2. `ingen_harness.sh` [2] &rarr; invokes `ingen_generate_conda_env_configuration.py` which uses the 
-   `ingen_package_spec.yml` and produces `ingen_builder_environment.yml` and 
-   `ingen_builder_requirements.txt` which will be used to create the new `ingen_builder` 
-   conda env
+A brief workflow is described, `TODO` add diagrams/details.
 
-3. `ingen_harness.sh` [3] &rarr; creates a new conda env using the `ingen_builder_environment.yml` 
-   and `ingen_builder_requirements.txt`
+- [A] generate a new package installer
+  - creates a new local conda installation
+  - creates a new `ingen` conda env needed for running rest of the steps (git/jq...)
+  - generates `requirements.txt` and `environment.yml` for `ingen_builder` conda env from the `ingen_package_spec.yml` base specification for the package installer
+  - creates a new `ingen_builder` conda env from the above - this accurately reflects the structure of the 'potential' new package installer
+  - extracts the current versions of every dependency in the `ingen_package_spec.yml` from the `ingen_builder` conda env into `ingen_package_updates.yml` which mirrors `ingen_package_spec.yml`, but with all versions updated
+  - removes the `ingen_builder` conda env as it is no longer needed
+  - checks for updates for every dependency between `ingen_package_updates.yml` and `ingen_package_current.yml` (which contains the versions of every dependency of the currently published package installer)
+  - if there are no updates of interest, the process stops, else proceeds as below
+  - creates a new self extracting package installer with the steps below:
+    - using the `ingen_package_updates.yml`, generates a set of `requirements.txt` and `environment.yml` for the new package installer
+    - generates a `symbiflow_installer.sh` script from the template `ingen_installer_script_template.sh`
+    - copies the `conda_helper.sh`, `ingen_package_updates.yml` and `package_changelog.txt` as well
+    - create self-extracting package installer using makeself-2.3.1
+    - naming format is: `symbiflow_dailybuild_dd_MMM_YYYY.gz.run`  
+  
+- [B] sanity test the generated package installer with basic tests of k6n10, k4n8, eoss3, pp3
+- [C] publish the generated package installer to Github Releases using the `gh-cli` + `github-actions`
 
-4. `ingen_harness.sh` [4] &rarr; invokes `ingen_generate_package_updates.py` which uses the 
-   `ingen_package_spec.yml` and helper scripts to generate `ingen_package_updates.yml`
+## TODO
 
-   The helper scripts include:
-
-   - `ingen_git_get_commit_list.sh` : this script clones `bare` git repo and gets the info for 
-     the last specified number of commits from the HEAD
-     
-     TODO: document the shell script inputs and output format (json)
-
-   - `conda_get_installed_package_info.sh` : this script can get the info of an *installed* 
-     package from a specified conda env
-
-     TODO: document the shell script inputs and output format (json)
-
-   `NOTE` This will indicate whether a new installer package needs to be created (only if 
-   there are updates in the packages)
-
-5. `ingen_harness.sh` [5] &rarr; invokes `ingen_generate_conda_env_configuration.py` which uses the 
-   `ingen_package_updates.yml` and produces `symbiflow_dailybuild/environment.yml` and 
-   `symbiflow_dailybuild/requirements.txt` which will be used, in combination 
-   with the `symbiflow_dailybuild_installer.sh` script to produce the final dailybuild 
-   installer
-
-6. `ingen_harness.sh` [6] &rarr; uses `makeself` and generates a dailybuild installer package 
-   from `symbiflow_dailybuild/`
-
-7. `ingen_harness.sh` [7] &rarr; invokes `ingen_test_installer.sh` with the generated 
-   dailybuild installer, in a new bash shell
-
-8. `ingen_test_installer.sh` [1] &rarr; invokes the dailybuild installer to install the 
-   symbiflow packages
-
-9. `ingen_test_installer.sh` [2] &rarr; configures the installation and runs the `sanity` tests
-
-10. `ingen_harness.sh` [8] &rarr;  publishes the new package to `TODO_PATH`
-
-11. `ingen_harness.sh` [9] &rarr; run CI using the new package (invoke separate test path ?)
-
-`NOTE` CI path should be capable of collating test results and reporting it.
+1. add complete CI flow automatically once the package installer is generated, tested and published
+2. optimize out the conda install, env creation if it has already been initialized once (saves time/bandwidth)
+3. document the `ingen_package_spec.yml` and `ingen_package_current.yml` formats (it is documented within already)
+4. optimize the git repo info extraction by using `gh-cli` rather than plain git (faster)
