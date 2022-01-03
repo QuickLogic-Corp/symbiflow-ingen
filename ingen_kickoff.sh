@@ -54,10 +54,10 @@ echo
 
 
 # sanity check if we have already run the the ingen process today:
-if [ -f "$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE" ] ; then
+if [ -f "$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_PUBLISH_PATH" ] ; then
     echo
     echo "[>> INGEN <<] package installer already exists:"
-    echo "      $INGEN_SYMBIFLOW_INSTALLER_ARCHIVE"
+    echo "      $INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_PUBLISH_PATH"
     echo "      the ingen process has already run for this date, nothing to do."
     echo
 
@@ -139,8 +139,6 @@ mv -v "$INGEN_PACKAGE_UPDATES_YAML" "$INGEN_PACKAGE_CURRENT_YAML"
 
 # the changelog txt is removed (leave it, as it is 'git'ignored)
 
-
-exit 0
 
 ##########################################################################################
 # PART C : Publish the Symbiflow Package Installer
