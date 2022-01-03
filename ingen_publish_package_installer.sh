@@ -273,7 +273,7 @@ if [ ! "$GHA_MODE_ENABLED" == "$TRUE_VAL" ] ; then
     ##########################################################################################
     # STEP 6c : identify new tag version to use (semver)
     ##########################################################################################
-    CURRENT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null`
+    CURRENT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null || true`
     if [ -z $CURRENT_VERSION ] ; then
         
         CURRENT_VERSION="v0.0.0"
