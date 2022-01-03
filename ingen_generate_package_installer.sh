@@ -6,6 +6,9 @@
 ##########################################################################################
 INGEN_ROOT_DIR="$INGEN_ROOT_DIR"
 
+# name of the Symbiflow Package Installer
+INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_NAME="$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_NAME"
+
 # path to generate the Symbiflow Package Installer
 INGEN_SYMBIFLOW_INSTALLER_ARCHIVE="$INGEN_SYMBIFLOW_INSTALLER_ARCHIVE"
 ##########################################################################################
@@ -25,6 +28,7 @@ INGEN_CONDA_INSTALL_DIR="${INGEN_ROOT_DIR}/conda"
 INGEN_PACKAGE_SPEC_YAML="${INGEN_ROOT_DIR}/ingen_package_spec.yml"
 INGEN_PACKAGE_UPDATES_YAML="${INGEN_ROOT_DIR}/ingen_package_updates.yml"
 INGEN_PACKAGE_CURRENT_YAML="${INGEN_ROOT_DIR}/ingen_package_current.yml"
+INGEN_PACKAGE_CHANGELOG_TXT="${INGEN_ROOT_DIR}/ingen_package_changelog.txt"
 INGEN_INSTALLER_SCRIPT_TEMPLATE="${INGEN_ROOT_DIR}/ingen_installer_script_template.sh"
 
 INGEN_CONDA_ENV__INGEN__ENV_PREFIX="${INGEN_CONDA_INSTALL_DIR}/envs/ingen"
@@ -43,6 +47,7 @@ INGEN_CONDA_ENV__SYMBIFLOW_INSTALLER__ENV_YAML="${INGEN_SYMBIFLOW_INSTALLER_DIR}
 INGEN_CONDA_ENV__SYMBIFLOW_INSTALLER__REQ_TXT="${INGEN_SYMBIFLOW_INSTALLER_DIR}/requirements.txt" # we don't directly use, it is in the yml
 INGEN_SYMBIFLOW_INSTALLER_CONDA_HELPER_SCRIPT="${INGEN_SYMBIFLOW_INSTALLER_DIR}/conda_helper.sh"
 INGEN_SYMBIFLOW_INSTALLER_PACKAGE_UPDATES_YAML="${INGEN_SYMBIFLOW_INSTALLER_DIR}/package_updates.yml"
+INGEN_SYMBIFLOW_INSTALLER_CHANGELOG_TXT="${INGEN_SYMBIFLOW_INSTALLER_DIR}/package_changelog.txt"
 INGEN_SYMBIFLOW_INSTALLER_SCRIPT="${INGEN_SYMBIFLOW_INSTALLER_DIR}/symbiflow_installer.sh"
 #INGEN_SYMBIFLOW_INSTALLER_ARCHIVE= # exported by the parent script!
 INGEN_SYMBIFLOW_INSTALLER_ARCHIVE_LABEL="Quicklogic Symbiflow Package Installer"
@@ -387,7 +392,7 @@ conda activate "$INGEN_CONDA_ENV__INGEN__ENV_PREFIX"
 #            the conda/pip packages information, and for the "gh" type packages from
 #            the github repositories
 #          - check if there are any updates available for 'relevant' packages according
-#            to the rules in the ingen package spec yaml
+#            to the rules in the ingen package spec yaml, and generate the changelog too
 ##########################################################################################
 
 # generate updates yaml using the package spec, conda packages json and pip packages json
@@ -426,6 +431,7 @@ echo ""
 python3 ./ingen_check_for_updates.py \
             --package_current_yaml_file="$INGEN_PACKAGE_CURRENT_YAML" \
             --package_updates_yaml_file="$INGEN_PACKAGE_UPDATES_YAML" \
+            --package_changelog_txt_file="$INGEN_PACKAGE_CHANGELOG_TXT"
 
 PACKAGE_UPDATE_AVAILABLE=$?
 
@@ -494,7 +500,7 @@ fi
 
 
 echo ""
-echo "[>> INGEN <<] copy conda helper script and package updates yaml to installer di:" 
+echo "[>> INGEN <<] copy conda helper script, package updates yaml, changelog to installer dir:" 
 echo "    $INGEN_SYMBIFLOW_INSTALLER_DIR"
 echo ""
 
@@ -503,6 +509,9 @@ cp -v "$INGEN_CONDA_HELPER_SCRIPT" "$INGEN_SYMBIFLOW_INSTALLER_CONDA_HELPER_SCRI
 
 # copy the package updates yaml file into the symbiflow_installer dir (optional)
 cp -v "$INGEN_PACKAGE_UPDATES_YAML" "$INGEN_SYMBIFLOW_INSTALLER_PACKAGE_UPDATES_YAML"
+
+# copy the package changelog txt file into the symbiflow_installer dir (optional)
+cp -v "$INGEN_PACKAGE_CHANGELOG_TXT" "$INGEN_SYMBIFLOW_INSTALLER_CHANGELOG_TXT"
 
 
 
@@ -553,6 +562,9 @@ chmod +x makeself-2.3.1.run
 
 # remove makeself install
 rm -rf ./makeself-2.3.1
+
+# remove makeself installer
+#rm -f ./makeself-2.3.1.run
 ##########################################################################################
 
 

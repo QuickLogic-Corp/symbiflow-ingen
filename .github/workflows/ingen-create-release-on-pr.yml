@@ -1,0 +1,172 @@
+name: ingen-create-release-on-pr
+
+# run when PR is raised to 'default' branch from a 'releases/**' branch
+# approve the PR (optional)
+# merge the PR
+# create a release with the newly added package installer
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+
+
+jobs:
+
+  create-release-on-pr:
+
+    name: create-release-on-pr-job
+    # job is scheduled on a runner only if the PR is from a branch starting with 'releases/'
+    if: startsWith(github.head_ref, 'releases/') == true
+    runs-on: ubuntu-latest
+
+    env:
+      # where the installer is generated:
+      RELEASES_DIR: 'installers/dailybuild'
+      # note that this path is already in .gitignore, so we can use it:
+      TEMP_INSTALLER_EXTRACT_PATH: 'symbiflow_installer'
+      IS_RELEASES_CHANGED: 'no'
+      DEFAULT_BRANCH: 'master'
+
+    steps:
+
+      - name: check out repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # we need all history, not a shallow clone for the next step
+
+      
+      # - name: dump 'github' context
+      #   env:
+      #     GITHUB_CONTEXT: ${{ toJson(github) }}
+      #   run: echo "$GITHUB_CONTEXT"
+
+      
+      - name: get changed files
+        shell: bash
+        run:  |
+          echo "before: ${{ github.event.pull_request.base.sha }}"
+          echo " after: ${{ github.event.pull_request.head.sha }}"
+          ALL_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          IS_ANY_FILE_CHANGED=$(git diff --quiet ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} || echo yes)
+
+          echo "ALL_CHANGES=$ALL_CHANGES" >> $GITHUB_ENV
+          echo "IS_ANY_FILE_CHANGED=$IS_ANY_FILE_CHANGED" >> $GITHUB_ENV
+
+      
+      - name: list changed files
+        shell: bash
+        run:  |
+          echo "changed files:"
+          echo ${{ env.ALL_CHANGES }}
+          echo ""
+          echo "are-there-changes-in-repo: ${{ env.IS_ANY_FILE_CHANGED }}"
+      
+      
+      # RELEASE_FILE is path of file relative to repo root
+      # RELEASE_FILENAME is path of file relative to releases dir, so only name of the file
+      # IS_RELEASE_CHANGED has 'yes' or 'no'
+      # https://stackoverflow.com/a/62239682/3379867
+      - name: get changed files in a specific directory
+        shell: bash
+        run:  |
+          RELEASE_FILE=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} -- "${{ env.RELEASES_DIR }}")
+          RELEASE_FILENAME=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --relative="${{ env.RELEASES_DIR }}")
+          IS_RELEASE_CHANGED=$(git diff --quiet ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} -- "${{ env.RELEASES_DIR }}" || echo yes)
+
+          echo "RELEASE_FILE=$RELEASE_FILE" >> $GITHUB_ENV
+          echo "RELEASE_FILENAME=$RELEASE_FILENAME" >> $GITHUB_ENV
+          echo "IS_RELEASE_CHANGED=$IS_RELEASE_CHANGED" >> $GITHUB_ENV
+
+      
+      - name: list changed files in a specific directory
+        shell: bash
+        run:  |
+          echo "changed files in ${{ env.RELEASES_DIR }}:"
+          echo ${{ env.RELEASE_FILE }}
+          echo ""
+          echo "are-there-changes-in-release-dir: ${{ env.IS_RELEASE_CHANGED }}"
+
+
+      # we need to be on the pr branch to approve via gh cli
+      # so, we add a gh pr checkout in the run, before trying to
+      # review with comment or approve (optional step)
+      - name: approve the review if there are release-artifact changes
+        if: ${{ env.IS_RELEASE_CHANGED == 'yes' }}
+        shell: bash
+        run:  |
+          gh pr checkout ${{ github.event.pull_request.number }}
+          GH_PR_CHECKOUT_STATUS=$?
+          echo "GH_PR_CHECKOUT_STATUS=$GH_PR_CHECKOUT_STATUS"
+          gh pr review --comment --body "[INGEN] auto approve"
+          GH_PR_REVIEWC_STATUS=$?
+          echo "GH_PR_REVIEWC_STATUS=$GH_PR_REVIEWC_STATUS"
+          gh pr review --approve
+          GH_PR_REVIEW_STATUS=$?
+          echo "GH_PR_REVIEW_STATUS=$GH_PR_REVIEW_STATUS" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      
+      - name: merge the PR if there are release-artifact changes
+        if: ${{ env.IS_RELEASE_CHANGED == 'yes' }}
+        shell: bash
+        run:  |
+          MERGE_BODY="[INGEN] auto merge PR"
+          PR_URL=${{ github.event.pull_request.html_url }}
+          gh pr merge $PR_URL --auto --delete-branch --squash --body "$MERGE_BODY"
+          GH_PR_MERGE_STATUS=$?
+          echo "GH_PR_MERGE_STATUS=$GH_PR_MERGE_STATUS" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      # we start the base release tag with 2.2.0 as we already have 
+      # versions before this
+      - name: create a release with the release-artifact added
+        if: ${{ env.GH_PR_MERGE_STATUS == '0' }}
+        shell: bash
+        run:  |
+          git checkout ${{ env.DEFAULT_BRANCH }} && git fetch
+
+          CURRENT_VERSION=`git describe --abbrev=0 --tags 2>/dev/null`
+          if [ -z $CURRENT_VERSION ] ; then
+              
+              CURRENT_VERSION="v0.0.0"
+              NEW_VERSION="v2.2.0"
+
+          else
+
+              # remove "v"
+              CURRENT_VERSION_PARTS=$(echo "$CURRENT_VERSION" | sed 's/v//')
+              # replace . with space so can split into an array
+              CURRENT_VERSION_PARTS=(${CURRENT_VERSION_PARTS//./ })
+
+              # get MAJOR, MINOR, PATCH
+              V_MAJOR=${CURRENT_VERSION_PARTS[0]}
+              V_MINOR=${CURRENT_VERSION_PARTS[1]}
+              V_PATCH=${CURRENT_VERSION_PARTS[2]}
+
+              # use custom logic to determine new MAJOR/MINOR/PATCH version numbers:
+              # current we use a simple "increment minor"
+              V_MINOR=$((V_MINOR+1))
+
+              # remember to add "v"
+              NEW_VERSION="v${V_MAJOR}.${V_MINOR}.${V_PATCH}"
+
+          fi
+
+          echo "CURRENT_VERSION=$CURRENT_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION"
+
+          echo "extract the changelog file from the installer"
+          chmod +x "${{ env.RELEASE_FILE }}"
+          "${{ env.RELEASE_FILE }}" --noexec --target ${{ env.TEMP_INSTALLER_EXTRACT_PATH }}
+
+          RELEASE_TITLE="[INGEN] release ${NEW_VERSION}"
+          RELEASE_NOTES_FILE="${{ env.TEMP_INSTALLER_EXTRACT_PATH }}/package_changelog.txt"
+          gh release create --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES_FILE" --target ${{ env.DEFAULT_BRANCH }} "$NEW_VERSION" "${{ env.RELEASE_FILE }}"
+          GH_RELEASE_STATUS=$?
+          echo "GH_RELEASE_STATUS=$GH_RELEASE_STATUS" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
