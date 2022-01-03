@@ -49,8 +49,8 @@ jobs:
           echo " after: ${{ github.event.pull_request.head.sha }}"
           ALL_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
           IS_ANY_FILE_CHANGED=$(git diff --quiet ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} || echo yes)
-
-          echo "ALL_CHANGES=$ALL_CHANGES" >> $GITHUB_ENV
+          echo "ALL_CHANGES=$ALL_CHANGES"
+          
           echo "IS_ANY_FILE_CHANGED=$IS_ANY_FILE_CHANGED" >> $GITHUB_ENV
 
       
