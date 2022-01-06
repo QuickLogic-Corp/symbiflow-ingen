@@ -184,10 +184,10 @@ package_list:
   use-version: latest
   working-version: 'd46f204fac69f0dbb866686fbd3b6fdeacfefc87'
   working-version-short: 'd46f204'
-  latest-version: '93a43d9749addc595f6c5d64550578f4e440236b'
-  latest-version-short: '93a43d9'
+  latest-version: '77f643302a79f793be27f652580eb86507823643'
+  latest-version-short: '77f6433'
   tarball-url-format: https://storage.googleapis.com/symbiflow-arch-defs-install/quicklogic-arch-defs-qlf-!!commit-sha1-short!!.tar.gz
-  comment: '2021-12-21 Merge pull request #728 from antmicro/rework_bidir'
+  comment: '2022-01-06 Merge pull request #744 from QuickLogic-Corp/cells_sim_update'
 
 - type: gh
   subtype: pip
