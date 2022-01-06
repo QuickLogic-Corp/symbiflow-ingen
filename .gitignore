@@ -2,6 +2,8 @@
 /ingen_package_updates.yml
 # generated changelog for a new installer
 /ingen_package_changelog.txt
+# generated logs
+/*.debug.log
 # local conda installation in the root dir
 /conda
 # conda installer
