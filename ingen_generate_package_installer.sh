@@ -539,6 +539,9 @@ if [ $GENERATE_INSTALLER_SCRIPT_STATUS -ne 0 ] ; then
 
 fi
 
+# [important!] ensure that the new generated installer script has executable permissions
+chmod +x "$INGEN_SYMBIFLOW_INSTALLER_SCRIPT"
+
 
 
 echo ""
