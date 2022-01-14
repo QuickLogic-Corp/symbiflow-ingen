@@ -138,7 +138,7 @@ package_list:
   channel: defaults
   use-version: null
   working-version: null
-  latest-version: '2.32.0'
+  latest-version: '2.34.1'
   comment: null
 
 - type: conda
@@ -184,10 +184,10 @@ package_list:
   use-version: latest
   working-version: 'd46f204fac69f0dbb866686fbd3b6fdeacfefc87'
   working-version-short: 'd46f204'
-  latest-version: 'ee54027e83db0f871a36f3c880a9fbb18cf467fc'
-  latest-version-short: 'ee54027'
+  latest-version: '7dbb1da42be8f875c6bd8efaf1a844c90cddbc15'
+  latest-version-short: '7dbb1da'
   tarball-url-format: https://storage.googleapis.com/symbiflow-arch-defs-install/quicklogic-arch-defs-qlf-!!commit-sha1-short!!.tar.gz
-  comment: '2022-01-09 bump pp3 submodule'
+  comment: '2022-01-14 Merge pull request #777 from antmicro/fix-post-synth-verilog'
 
 - type: gh
   subtype: pip
