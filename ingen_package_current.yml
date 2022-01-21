@@ -184,10 +184,10 @@ package_list:
   use-version: latest
   working-version: 'd46f204fac69f0dbb866686fbd3b6fdeacfefc87'
   working-version-short: 'd46f204'
-  latest-version: '7dbb1da42be8f875c6bd8efaf1a844c90cddbc15'
-  latest-version-short: '7dbb1da'
+  latest-version: '3e3a86f93e3d8867fcac521b5f01710ebd216e1f'
+  latest-version-short: '3e3a86f'
   tarball-url-format: https://storage.googleapis.com/symbiflow-arch-defs-install/quicklogic-arch-defs-qlf-!!commit-sha1-short!!.tar.gz
-  comment: '2022-01-14 Merge pull request #777 from antmicro/fix-post-synth-verilog'
+  comment: '2022-01-20 Merge pull request #795 from antmicro/no-upload-from-dependabot'
 
 - type: gh
   subtype: pip
