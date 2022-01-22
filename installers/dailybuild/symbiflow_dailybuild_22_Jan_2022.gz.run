@@ -1,0 +1,575 @@
+#!/bin/sh
+# This script was generated using Makeself 2.3.1
+
+ORIG_UMASK=`umask`
+if test "n" = n; then
+    umask 077
+fi
+
+CRCsum="3123433885"
+MD5="21ea4be302f4b642ed70b2873c05e77e"
+TMPROOT=${TMPDIR:=/tmp}
+USER_PWD="$PWD"; export USER_PWD
+
+label="Quicklogic Symbiflow Package Installer"
+script="./symbiflow_installer.sh"
+scriptargs=""
+licensetxt=""
+helpheader=''
+targetdir="symbiflow_installer"
+filesizes="5059"
+keep="n"
+nooverwrite="n"
+quiet="n"
+accept="n"
+nodiskspace="n"
+export_conf="n"
+
+print_cmd_arg=""
+if type printf > /dev/null; then
+    print_cmd="printf"
+elif test -x /usr/ucb/echo; then
+    print_cmd="/usr/ucb/echo"
+else
+    print_cmd="echo"
+fi
+	
+if test -d /usr/xpg4/bin; then
+    PATH=/usr/xpg4/bin:$PATH
+    export PATH
+fi
+
+unset CDPATH
+
+MS_Printf()
+{
+    $print_cmd $print_cmd_arg "$1"
+}
+
+MS_PrintLicense()
+{
+  if test x"$licensetxt" != x; then
+    echo "$licensetxt"
+    if test x"$accept" != xy; then
+      while true
+      do
+        MS_Printf "Please type y to accept, n otherwise: "
+        read yn
+        if test x"$yn" = xn; then
+          keep=n
+          eval $finish; exit 1
+          break;
+        elif test x"$yn" = xy; then
+          break;
+        fi
+      done
+    fi
+  fi
+}
+
+MS_diskspace()
+{
+	(
+	df -kP "$1" | tail -1 | awk '{ if ($4 ~ /%/) {print $3} else {print $4} }'
+	)
+}
+
+MS_dd()
+{
+    blocks=`expr $3 / 1024`
+    bytes=`expr $3 % 1024`
+    dd if="$1" ibs=$2 skip=1 obs=1024 conv=sync 2> /dev/null | \
+    { test $blocks -gt 0 && dd ibs=1024 obs=1024 count=$blocks ; \
+      test $bytes  -gt 0 && dd ibs=1 obs=1024 count=$bytes ; } 2> /dev/null
+}
+
+MS_dd_Progress()
+{
+    if test x"$noprogress" = xy; then
+        MS_dd $@
+        return $?
+    fi
+    file="$1"
+    offset=$2
+    length=$3
+    pos=0
+    bsize=4194304
+    while test $bsize -gt $length; do
+        bsize=`expr $bsize / 4`
+    done
+    blocks=`expr $length / $bsize`
+    bytes=`expr $length % $bsize`
+    (
+        dd ibs=$offset skip=1 2>/dev/null
+        pos=`expr $pos \+ $bsize`
+        MS_Printf "     0%% " 1>&2
+        if test $blocks -gt 0; then
+            while test $pos -le $length; do
+                dd bs=$bsize count=1 2>/dev/null
+                pcent=`expr $length / 100`
+                pcent=`expr $pos / $pcent`
+                if test $pcent -lt 100; then
+                    MS_Printf "\b\b\b\b\b\b\b" 1>&2
+                    if test $pcent -lt 10; then
+                        MS_Printf "    $pcent%% " 1>&2
+                    else
+                        MS_Printf "   $pcent%% " 1>&2
+                    fi
+                fi
+                pos=`expr $pos \+ $bsize`
+            done
+        fi
+        if test $bytes -gt 0; then
+            dd bs=$bytes count=1 2>/dev/null
+        fi
+        MS_Printf "\b\b\b\b\b\b\b" 1>&2
+        MS_Printf " 100%%  " 1>&2
+    ) < "$file"
+}
+
+MS_Help()
+{
+    cat << EOH >&2
+${helpheader}Makeself version 2.3.1
+ 1) Getting help or info about $0 :
+  $0 --help   Print this message
+  $0 --info   Print embedded info : title, default target directory, embedded script ...
+  $0 --lsm    Print embedded lsm entry (or no LSM)
+  $0 --list   Print the list of files in the archive
+  $0 --check  Checks integrity of the archive
+
+ 2) Running $0 :
+  $0 [options] [--] [additional arguments to embedded script]
+  with following options (in that order)
+  --confirm             Ask before running embedded script
+  --quiet		Do not print anything except error messages
+  --accept              Accept the license
+  --noexec              Do not run embedded script
+  --keep                Do not erase target directory after running
+			the embedded script
+  --noprogress          Do not show the progress during the decompression
+  --nox11               Do not spawn an xterm
+  --nochown             Do not give the extracted files to the current user
+  --nodiskspace         Do not check for available disk space
+  --target dir          Extract directly to a target directory
+                        directory path can be either absolute or relative
+  --tar arg1 [arg2 ...] Access the contents of the archive through the tar command
+  --                    Following arguments will be passed to the embedded script
+EOH
+}
+
+MS_Check()
+{
+    OLD_PATH="$PATH"
+    PATH=${GUESS_MD5_PATH:-"$OLD_PATH:/bin:/usr/bin:/sbin:/usr/local/ssl/bin:/usr/local/bin:/opt/openssl/bin"}
+	MD5_ARG=""
+    MD5_PATH=`exec <&- 2>&-; which md5sum || command -v md5sum || type md5sum`
+    test -x "$MD5_PATH" || MD5_PATH=`exec <&- 2>&-; which md5 || command -v md5 || type md5`
+	test -x "$MD5_PATH" || MD5_PATH=`exec <&- 2>&-; which digest || command -v digest || type digest`
+    PATH="$OLD_PATH"
+
+    if test x"$quiet" = xn; then
+		MS_Printf "Verifying archive integrity..."
+    fi
+    offset=`head -n 555 "$1" | wc -c | tr -d " "`
+    verb=$2
+    i=1
+    for s in $filesizes
+    do
+		crc=`echo $CRCsum | cut -d" " -f$i`
+		if test -x "$MD5_PATH"; then
+			if test x"`basename $MD5_PATH`" = xdigest; then
+				MD5_ARG="-a md5"
+			fi
+			md5=`echo $MD5 | cut -d" " -f$i`
+			if test x"$md5" = x00000000000000000000000000000000; then
+				test x"$verb" = xy && echo " $1 does not contain an embedded MD5 checksum." >&2
+			else
+				md5sum=`MS_dd_Progress "$1" $offset $s | eval "$MD5_PATH $MD5_ARG" | cut -b-32`;
+				if test x"$md5sum" != x"$md5"; then
+					echo "Error in MD5 checksums: $md5sum is different from $md5" >&2
+					exit 2
+				else
+					test x"$verb" = xy && MS_Printf " MD5 checksums are OK." >&2
+				fi
+				crc="0000000000"; verb=n
+			fi
+		fi
+		if test x"$crc" = x0000000000; then
+			test x"$verb" = xy && echo " $1 does not contain a CRC checksum." >&2
+		else
+			sum1=`MS_dd_Progress "$1" $offset $s | CMD_ENV=xpg4 cksum | awk '{print $1}'`
+			if test x"$sum1" = x"$crc"; then
+				test x"$verb" = xy && MS_Printf " CRC checksums are OK." >&2
+			else
+				echo "Error in checksums: $sum1 is different from $crc" >&2
+				exit 2;
+			fi
+		fi
+		i=`expr $i + 1`
+		offset=`expr $offset + $s`
+    done
+    if test x"$quiet" = xn; then
+		echo " All good."
+    fi
+}
+
+UnTAR()
+{
+    if test x"$quiet" = xn; then
+		tar $1vf -  2>&1 || { echo " ... Extraction failed." > /dev/tty; kill -15 $$; }
+    else
+		tar $1f -  2>&1 || { echo Extraction failed. > /dev/tty; kill -15 $$; }
+    fi
+}
+
+finish=true
+xterm_loop=
+noprogress=n
+nox11=n
+copy=none
+ownership=y
+verbose=n
+
+initargs="$@"
+
+while true
+do
+    case "$1" in
+    -h | --help)
+	MS_Help
+	exit 0
+	;;
+    -q | --quiet)
+	quiet=y
+	noprogress=y
+	shift
+	;;
+	--accept)
+	accept=y
+	shift
+	;;
+    --info)
+	echo Identification: "$label"
+	echo Target directory: "$targetdir"
+	echo Uncompressed size: 40 KB
+	echo Compression: gzip
+	echo Date of packaging: Sat Jan 22 14:10:09 PST 2022
+	echo Built with Makeself version 2.3.1 on 
+	echo Build command was: "./makeself-2.3.1/makeself.sh \\
+    \"-q\" \\
+    \"--gzip\" \\
+    \"/home/build/projects/symbiflow_ingen/symbiflow-ingen-gh/symbiflow_installer\" \\
+    \"/home/build/projects/symbiflow_ingen/symbiflow-ingen-gh/symbiflow_dailybuild_22_Jan_2022.gz.run\" \\
+    \"Quicklogic Symbiflow Package Installer\" \\
+    \"./symbiflow_installer.sh\""
+	if test x"$script" != x; then
+	    echo Script run after extraction:
+	    echo "    " $script $scriptargs
+	fi
+	if test x"" = xcopy; then
+		echo "Archive will copy itself to a temporary location"
+	fi
+	if test x"n" = xy; then
+		echo "Root permissions required for extraction"
+	fi
+	if test x"n" = xy; then
+	    echo "directory $targetdir is permanent"
+	else
+	    echo "$targetdir will be removed after extraction"
+	fi
+	exit 0
+	;;
+    --dumpconf)
+	echo LABEL=\"$label\"
+	echo SCRIPT=\"$script\"
+	echo SCRIPTARGS=\"$scriptargs\"
+	echo archdirname=\"symbiflow_installer\"
+	echo KEEP=n
+	echo NOOVERWRITE=n
+	echo COMPRESS=gzip
+	echo filesizes=\"$filesizes\"
+	echo CRCsum=\"$CRCsum\"
+	echo MD5sum=\"$MD5\"
+	echo OLDUSIZE=40
+	echo OLDSKIP=556
+	exit 0
+	;;
+    --lsm)
+cat << EOLSM
+No LSM.
+EOLSM
+	exit 0
+	;;
+    --list)
+	echo Target directory: $targetdir
+	offset=`head -n 555 "$0" | wc -c | tr -d " "`
+	for s in $filesizes
+	do
+	    MS_dd "$0" $offset $s | eval "gzip -cd" | UnTAR t
+	    offset=`expr $offset + $s`
+	done
+	exit 0
+	;;
+	--tar)
+	offset=`head -n 555 "$0" | wc -c | tr -d " "`
+	arg1="$2"
+    if ! shift 2; then MS_Help; exit 1; fi
+	for s in $filesizes
+	do
+	    MS_dd "$0" $offset $s | eval "gzip -cd" | tar "$arg1" - "$@"
+	    offset=`expr $offset + $s`
+	done
+	exit 0
+	;;
+    --check)
+	MS_Check "$0" y
+	exit 0
+	;;
+    --confirm)
+	verbose=y
+	shift
+	;;
+	--noexec)
+	script=""
+	shift
+	;;
+    --keep)
+	keep=y
+	shift
+	;;
+    --target)
+	keep=y
+	targetdir=${2:-.}
+    if ! shift 2; then MS_Help; exit 1; fi
+	;;
+    --noprogress)
+	noprogress=y
+	shift
+	;;
+    --nox11)
+	nox11=y
+	shift
+	;;
+    --nochown)
+	ownership=n
+	shift
+	;;
+    --nodiskspace)
+	nodiskspace=y
+	shift
+	;;
+    --xwin)
+	if test "n" = n; then
+		finish="echo Press Return to close this window...; read junk"
+	fi
+	xterm_loop=1
+	shift
+	;;
+    --phase2)
+	copy=phase2
+	shift
+	;;
+    --)
+	shift
+	break ;;
+    -*)
+	echo Unrecognized flag : "$1" >&2
+	MS_Help
+	exit 1
+	;;
+    *)
+	break ;;
+    esac
+done
+
+if test x"$quiet" = xy -a x"$verbose" = xy; then
+	echo Cannot be verbose and quiet at the same time. >&2
+	exit 1
+fi
+
+if test x"n" = xy -a `id -u` -ne 0; then
+	echo "Administrative privileges required for this archive (use su or sudo)" >&2
+	exit 1	
+fi
+
+if test x"$copy" \!= xphase2; then
+    MS_PrintLicense
+fi
+
+case "$copy" in
+copy)
+    tmpdir=$TMPROOT/makeself.$RANDOM.`date +"%y%m%d%H%M%S"`.$$
+    mkdir "$tmpdir" || {
+	echo "Could not create temporary directory $tmpdir" >&2
+	exit 1
+    }
+    SCRIPT_COPY="$tmpdir/makeself"
+    echo "Copying to a temporary location..." >&2
+    cp "$0" "$SCRIPT_COPY"
+    chmod +x "$SCRIPT_COPY"
+    cd "$TMPROOT"
+    exec "$SCRIPT_COPY" --phase2 -- $initargs
+    ;;
+phase2)
+    finish="$finish ; rm -rf `dirname $0`"
+    ;;
+esac
+
+if test x"$nox11" = xn; then
+    if tty -s; then                 # Do we have a terminal?
+	:
+    else
+        if test x"$DISPLAY" != x -a x"$xterm_loop" = x; then  # No, but do we have X?
+            if xset q > /dev/null 2>&1; then # Check for valid DISPLAY variable
+                GUESS_XTERMS="xterm gnome-terminal rxvt dtterm eterm Eterm xfce4-terminal lxterminal kvt konsole aterm terminology"
+                for a in $GUESS_XTERMS; do
+                    if type $a >/dev/null 2>&1; then
+                        XTERM=$a
+                        break
+                    fi
+                done
+                chmod a+x $0 || echo Please add execution rights on $0
+                if test `echo "$0" | cut -c1` = "/"; then # Spawn a terminal!
+                    exec $XTERM -title "$label" -e "$0" --xwin "$initargs"
+                else
+                    exec $XTERM -title "$label" -e "./$0" --xwin "$initargs"
+                fi
+            fi
+        fi
+    fi
+fi
+
+if test x"$targetdir" = x.; then
+    tmpdir="."
+else
+    if test x"$keep" = xy; then
+	if test x"$nooverwrite" = xy && test -d "$targetdir"; then
+            echo "Target directory $targetdir already exists, aborting." >&2
+            exit 1
+	fi
+	if test x"$quiet" = xn; then
+	    echo "Creating directory $targetdir" >&2
+	fi
+	tmpdir="$targetdir"
+	dashp="-p"
+    else
+	tmpdir="$TMPROOT/selfgz$$$RANDOM"
+	dashp=""
+    fi
+    mkdir $dashp $tmpdir || {
+	echo 'Cannot create target directory' $tmpdir >&2
+	echo 'You should try option --target dir' >&2
+	eval $finish
+	exit 1
+    }
+fi
+
+location="`pwd`"
+if test x"$SETUP_NOCHECK" != x1; then
+    MS_Check "$0"
+fi
+offset=`head -n 555 "$0" | wc -c | tr -d " "`
+
+if test x"$verbose" = xy; then
+	MS_Printf "About to extract 40 KB in $tmpdir ... Proceed ? [Y/n] "
+	read yn
+	if test x"$yn" = xn; then
+		eval $finish; exit 1
+	fi
+fi
+
+if test x"$quiet" = xn; then
+	MS_Printf "Uncompressing $label"
+fi
+res=3
+if test x"$keep" = xn; then
+    trap 'echo Signal caught, cleaning up >&2; cd $TMPROOT; /bin/rm -rf $tmpdir; eval $finish; exit 15' 1 2 3 15
+fi
+
+if test x"$nodiskspace" = xn; then
+    leftspace=`MS_diskspace $tmpdir`
+    if test -n "$leftspace"; then
+        if test "$leftspace" -lt 40; then
+            echo
+            echo "Not enough space left in "`dirname $tmpdir`" ($leftspace KB) to decompress $0 (40 KB)" >&2
+            echo "Use --nodiskspace option to skip this check and proceed anyway" >&2
+            if test x"$keep" = xn; then
+                echo "Consider setting TMPDIR to a directory with more free space."
+            fi
+            eval $finish; exit 1
+        fi
+    fi
+fi
+
+for s in $filesizes
+do
+    if MS_dd_Progress "$0" $offset $s | eval "gzip -cd" | ( cd "$tmpdir"; umask $ORIG_UMASK ; UnTAR xp ) 1>/dev/null; then
+		if test x"$ownership" = xy; then
+			(cd "$tmpdir"; chown -R `id -u` .;  chgrp -R `id -g` .)
+		fi
+    else
+		echo >&2
+		echo "Unable to decompress $0" >&2
+		eval $finish; exit 1
+    fi
+    offset=`expr $offset + $s`
+done
+if test x"$quiet" = xn; then
+	echo
+fi
+
+cd "$tmpdir"
+res=0
+if test x"$script" != x; then
+    if test x"$export_conf" = x"y"; then
+        MS_BUNDLE="$0"
+        MS_LABEL="$label"
+        MS_SCRIPT="$script"
+        MS_SCRIPTARGS="$scriptargs"
+        MS_ARCHDIRNAME="$archdirname"
+        MS_KEEP="$KEEP"
+        MS_NOOVERWRITE="$NOOVERWRITE"
+        MS_COMPRESS="$COMPRESS"
+        export MS_BUNDLE MS_LABEL MS_SCRIPT MS_SCRIPTARGS
+        export MS_ARCHDIRNAME MS_KEEP MS_NOOVERWRITE MS_COMPRESS
+    fi
+
+    if test x"$verbose" = x"y"; then
+		MS_Printf "OK to execute: $script $scriptargs $* ? [Y/n] "
+		read yn
+		if test x"$yn" = x -o x"$yn" = xy -o x"$yn" = xY; then
+			eval "\"$script\" $scriptargs \"\$@\""; res=$?;
+		fi
+    else
+		eval "\"$script\" $scriptargs \"\$@\""; res=$?
+    fi
+    if test "$res" -ne 0; then
+		test x"$verbose" = xy && echo "The program '$script' returned an error code ($res)" >&2
+    fi
+fi
+if test x"$keep" = xn; then
+    cd $TMPROOT
+    /bin/rm -rf $tmpdir
+fi
+eval $finish; exit $res
+‹     í<ÛrÛ¸’yæû¾Ã´wœÔ„©«­‰|Æq”D5íØÎœI%)Š%®)’!)_æTªv¿qö'ö#¶ o"%+ñåìÙ*I$Ğht7ú
+¸VòàM…Öm·Ÿü;|ÿ—ı¯ÿæŸÿùjÖh-­ÛÔTµ©jOT­Ñì¶ö“Gh³(6BBŒfk-égùSÃñÈ,¢aôäÿN«ÕÃ¼0ÆT7'†7¦®?®Å×ñ½ó¿Ój-ä³Ó™ã§İ‰ºæÿƒ7éÓÑà¯ä÷ÁéÙğøè™Äqõêõ±Of£šéOëïgyqèS9ğÃ İLGíúWŠšÅ¢vD>'ÏIúó‹Ô¤Mc§cïÂ§µ³ÓéÚ¦a¶Ú¨m«ZWSéÈjhªÙ¤ßßÛ#»;]µAÕæ¨c«†İÔLC££–iYFWítw:–m­®jIgû=ÒPEÕ”Fƒ¼£á˜’`æº$¤_g4ŠÉfww—Ø¡?%†O3ôë¨g#?V\#†NÒ“uK÷?Î	é”zqtï[¥ı¯6µ¹ıßî´ëıÿ-¸‰'¾§˜¾Å!,0–`á®·Èÿ—ıŸØÿY`¡r¬İLİGİÿZ«©5çí£¥­÷ÿc´M2<z38"'û¿í¿ûï¥MbÎÂ‚{C®(™—”ÄJlß»ïxcß´ÍFøI|›!Šz0ŸõhËxNDŸOÓ!OÇÔ£!È™Åmôx†;ğÉøÄ Ãg  ›çÇ8§™”HéTàoPœË1ğdàI6±B-„FWVØ*¼›‰åÖÓ¢ÛÉéñËı—‡I4ñg®E<cÊ×Ïæ7"’â:1½V ’L@2fñ,¤µd8NP"A›=ïÑãö¨›vI~Ç>Š™ètå‡@qåäÎñ½:÷`’ŸéØä7hqè-Æ2Òöø£ÏÕÄ1'Ó”6ÍÅà£ãóA/÷¶8ÃvD\Ü­Àc2şƒ7bá —qÖ H’bÃúS'&E\ç‚’ÈçxşLêüM] ](Qº}OAPˆ.ˆÁÈ¥Ïş>E8p‚ïCT!{+8NüÊM{ë)—ôg94 oQ:^ğ>ìçx5
+Ïœß‰‡{«‡ñ7šÚ-(¥Ã?±Š!
+ìû0È‡öL 32M¤ÌBW±ıpj`çDãD±Wkcß»ÔœˆiŸŠXJqÀ8õ¯w¹,îÊ^~umeãàøİ»á¹~öv_ƒÿOÏ7j0ymügIw2¥UÆ+
+¨éØèĞ«	-z…1Tœ(1¾Ğ2•â‰åZëyÖ÷PUµ˜Ô+²y²ğ1U<0¾tÓ}·4ÏVÀÄ ôÆ78sˆ tø¾•¢àX{Äáz©¬Ï¿òvÉ6îúl<[©ãY°IcF$ Y"?ñèL¢ab#@ëÍ"@‚›NB”=Ì©š,_.RH†Ï€š£ 
+Ö‘|âª¢tŒèû…Ë­>Ga™`9Ø…|²|o;&|©%’¢Šk¥08YBºìKÃqQeåñã}ƒ%‰	‡l"§!ÒÅ%ä	Fï_‘‹à]ôˆÄğÆp±rìœ”!Ó;x<öüZ0²Øa¶Øğn„æ}.š2„Ë4·@$s<2Ş=E”Ø²}Ï½y&I¨t{œz…_,¥²­ÕÔšº-II/×‰â[ZÎâD’’·]™s‡$®ù{äÆn")5K=’º°ŸFÔ­£ï)qÍØ«rc>"€·ïë	 ‚8‹¤)o”mµ¶«·;Í>6T»=2vÚÛR"¾…nZSoéãÖl´L»Íz¥\Ü¾¡Ä¢ç†e”LOîl¼­ÎØk V_|Uú11Ğ»zKÓôñHëª¶fUR0éØŞİÕÇÖ¨iìšİ[‰x+¦	aS€«’õ2Ü|SçOØWw &¬Ğ#¥Ä¾Â®êÔvùñ<Q-+©ºÃˆ4İÑÇj§©u-µÕ¨"+ª‡Ûˆ¸2†	1s3®JNG@«¤ä2òE¨lÁÌ„³¨R ”Xd‰Lâyy³ê;z{§­êãvKm·Û¶y« U¡‘#²˜NŒq|qc1XõhÕum7kÍÚ®V¹²Wéz˜Q›¼Àû0fnİ•ä­Z£öãX¹×S÷a°êŞ«È™.ı·È÷·fMëÖ:?Œ˜u^nRú@è¡yÿAì`g=RZ³u†š<ZİÚzba@úÄÒ`O6*°ÚÌ‡Ù™‡ÆÑX€b)I~Gä´Zk)Å–!#òów5`bw»•ä¡u‰BãI§,h_bŞV¨JYP?…èŒ†ßá}Y­İP[¶avvmÕv:ÎNÇYXK´¨aÚÔ6wØ2+£ÕF¥µYµ0Yœ‚ °G9 üÀ·Ü
+Æî‘4Cwî^HÍùEéà¼²\|uuÛˆ¦w‘Ú¶Ô]­İ²ìİ‘jv,­Õíf»»³ÛV©¹Û6@:¨µÓ©dô÷.ĞOSÔ¢i•ôÓÔù˜jÓGNz„Ó{#_&
+w%c×îĞ¦1jF«Óm¦9‚ ±­YÍ–¡í´t·Û±:•Şø¶Õn´;İ]£5ê4,m·w[šİì -[F«ÓØ¥ÔY»dÔàßN%­92ASII¨D4Fç=Ú^W,¬şG½K'ô=dÆÔşV©ÿc±®şßêtÖõ¿ÇhÂïŠz ‰R×‹ëyê™,Áªÿ§ß¬uáGU† ×c	Š~)O´¼9¡Ñ¯Ê“,RÈbô+³ù±½^b+<$íõ’`5[}¯Ç¢Äü åäb£üãBT’Aş7sÅóPá+¨ö{ ¢„dşXôPûŸyçú„ºkÑäÑÏjÍn{şüg»ÙYŸÿ{œúÿF}äxõ‘MĞ÷Éu—bò}JÁæb„åÙYhR‹~€˜E'‰ÌĞ	° ÆËWĞ?b…Ï‚:+ ğz	O‹ƒ©!>Jk®oXØ$Ç&Ÿ>yK•I>^îŸ½ÕÏ?œdòåË/˜ÄÇL!ÔœøD>g5šj$…¿àÃPàX#¯|,ŒzMÍYLk2‡uíÄD“lGÂÕ#È¥ñÕÈ…ÀçüôÃ@ÿ}ÿ°/ã7Yz½x&°¯2z7<½Ú×‡Ggçû‡‡ƒÓ¾üÎñ¶â¦Ü4»:Díj­©:ŞìZ¹Şéèì497V;Ğ?œäÄİCç¯fxƒÃ¼¾iUfÈ2ëH@Wç{XDz`Ä“ˆ¼¨ãg=öù¯'qƒå„{’=óÌ˜­—CyúŒü]b”Bö²µIú}¢‘/DpDJÊúÈ–Â"Ï"ˆizwÂTNAJÙùxzÀ5öY‡ŸÖQ”Ô0a(5!¦ºÎìƒ Î¤å'-l1(Vê¯†§ı--Ï¥K€ak²…g¶ÙãmæÖÂá§SŠ°7Éùñ«c‚ÕV<'aN¨y‘´X)ËÖºI¦ÖÓ(®FœÄ!hhWÀáÕ‰?‹±ÎåÛäo|2DşÆ6*›‚×™à¹™x"öÉVi™œò¨	’dIÖ[Ñ™Æf=}Ô5‹¨¡şàØ%…Sâ_H9~©Ò·år{W‰}XY}\)ÍŠ˜IµÒºU>Ç4.Ë9şRŠ(6hÖ
+•%g4ZB"Ë¿ò\ß°P¢Re”+§ÖjµŒWˆòµ0_¢åêÕ8(Ç°+ááQ¹Œ(x±t9‡qĞøŒŞ=rû¤sLLd"#w.ŠÊjÎ\Œ€Ë¹]µI”Q,M[uê[´îùädÿü-ş@“ÈSôœ(AU¦ƒÚÎ5;Q · –˜Ë7£¢¹H~¤‚Ávõb…M*ñCPğü|½ŒêÌ$.à®2Dá}I.åTk2EY’K¦"®gn1·C7Á‰‹ƒmg<¹n í.‘!˜ğ0‘óQ<³mÎ¥±ëW8Û0G_xa^ø>`´ÂèËÒÈ«z[k7Új·QçĞ˜N®ÁöÀQğl£ã)†"Îf’’¹3Ûgº3‹BDÅtªD³(I¶o ÚÛdo¯J7°ÆËši¢ˆ‚ŞqD]›ó›=o•¢(¸ Ği“0(f• ¹Ü
+¸–± Æ(g€6¾dZŞF!¡d~]›xØœ?t#¾Ø1‹¢<ã}Å)<Æ@ÀØÊfÑ“Yt6£C‚ÄFş%­Òxì˜JB?ŠGWv´)p“3ûË«ğs­xî0Ñl¾Üˆ(iON+Í	VVpt„—Ù“ÜËYë‹ßS·3‘Õ3.°Íï²µ˜•-j¥EÌ^~½ë'§ƒ×Ã?ú[ïñì³şzx8èo5¥•TSy;J¹†„áôâ2´dF9¯FË8sjÀ$çÎú[‘òb¶Åa³¨Kï‰?™<U] Oï’§{Ä÷aEæäAh­{â6FØ÷Ìë*÷Âé{Ãõël¯$'¼ÃÙàüÃI:şø·¾¼•¦Rã‘ÚÑJ_2'=iÇe‚#€bšÓ¾Y’C@¿³¿õ47>Ë½—B¡‡¡$•ŞéäãùÛã£"îGŞgP„“5fx2Ã	²7¹ÑàÃå†²ƒ?NçƒWzn9òÖßK|û6ŞÊÅÑù•¤ÃËÔıÆ2e|ó’EÜ>Ü	äÜVJx‰ƒeÜSòVÅ¢0<ûé§TÚqXçùq…WåÕÒ¨ôùJ›:Ÿq}ÿ"ç§'/±Uªù˜n«(.å×™0ÌÍ’şZ¸é’<,•5G‚¦¾å
+KfçÃÙ53~.R9ì 6Oa°!ß
+l~•c?î±ŸrQ0æºÑë ¦¥VO^ .Ë&ÎËï‚™ó´ÒÔÌÏÂ¿lâDW›µ²w‘Å™)ÀÓ +jÚ¬kÁè%,™—0¶“HNÌ*vP.H€ˆËoµ\¹˜¢VTdà0bÁ sŒBé_ uó’Lø†”[\ÿIkpz@İsè–úO£¥vçê?]µÑ]×¿şƒ	j.Ã²@©Ç,Yâó«D—¥Íá
+[şJ…Èxå=_'
+º±|tDá?¦&³Âb'€„å˜ÌËµï%û5ò]vµ¡N}ğà˜Úä‘áI#ì»w3Ğ ÆÒÍÉåÕ$‘ùl~#-ø§çïN²×Ï¤ƒ§§h¿™ç÷4¸²ILÃ^†1•&óé½^e%‰³I"ÇnC6êÛ|M>Ç‡Ç§úËÃƒ¾ü™~Ò~i¶¦²xz:x•<ÔÒ‡oNƒ£äq#×ô{¬Â³+zá dj
+_DŠä·³D­q“k˜¨—¤Cå›¼ @vÈ‰à!'Ÿ§õªÆ
+"35­ü‰`ò¾¨c©X;ÌO¤ûöy+×Ÿİ:òc´óÏIàRÌ;±t]v÷Ì¤ ZÉ<*áƒ£xmàùŒ¶oÄå£ŠúÀÔ“jèŞg¹:¯VR—/Õš_ªğnI©Z:QÕ°´üÄ2äQºx>@ïŒ!MÎ’å(Š\|iz&–e’#‰a7«˜ƒUjÏ>¾{9|}xüW½¢U“¤bŞ <8œ—†0o»ùaàÖëúûÃƒßßtö@ f	bß0ˆrGõäÕ€cŠ¨„áÜ™­@Şëç”×:Ì$JüM ıÃÉ«ıóÁY5*×ää,ë™¦ûS-)M/à;O€3ú¨$ƒ›äà‹Å¬BÄ•tŞ¬˜^‚O8G ·2=åHiõ«@¤Ì0æÕU®ä q~bŞUô*ÌZEu6—g\:cqórŞÖšV9y¨R8~Q0`È!4±YBqÏ'o-‘h9¬ÿ`M–×d—¡÷ˆebüÈ¶vEt±œîùêa%Ù—èGcÃ‚Ô¿¼TFVİ–b-ß·‹…ÃìÓ"şâ^Lr€åã©¼[ç
+‚Haü1¼2c{¯ì~ÿ*.J¥ë²#wÎM ³zÉ*ÉpYƒeòI¿IÅóÌ3£×qsæşª‚¸oÂelŞÇŸÍÃc«reEÜ’—T°0ÍO5a¯äæ
+†éÊ)8ÊµïC~ú‰„ÓÂ¨Jò1bÜíê†”;S€7¦~^ı–Ë¯«Ş6YŠü/LüĞ
+ŠM~]õÂ‡(MVgà ÜºªIåÔ[Ş‰Ä¿D"R«~HÄ0(É °iĞ™øc¬øÑó»WúÙùéğè~8<;ï?}6ÿèçşÓªØ¬àT-ÄÒÿŸåB`S)ğ˜oé}ŞÂşŸåû)
+·@ù†y ¼øV}¬o¨9ù¹*î*Å<ÕËEÙ”ä¥¯?íí‘÷™ò.ç û‰Ö%/^|¹ {-¶Øæí ‡(„gLe²WiÓÌŠ£ƒµGŒ|‹8|úõD²KU‹ò†#ãé[`â¹7¶+Ø¹­Y?¼º~>öûá5Y6Nâİ»íö­8ç-Ù)DEÓ&äüä$(ËÜ‰Ø8İÉŸ]+„YNlDmLÕÍ"š³ƒÉÉÒ¥ØTç–xú`)³†yL|L¼Ä´œI`ğ7Ù9ÛÚúîØº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûº­Ûºıó·ÿ5< x  
