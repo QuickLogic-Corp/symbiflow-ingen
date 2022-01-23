@@ -184,10 +184,10 @@ package_list:
   use-version: latest
   working-version: 'd46f204fac69f0dbb866686fbd3b6fdeacfefc87'
   working-version-short: 'd46f204'
-  latest-version: '98702e03b6f0af31ca1eb4cdda706786dfaa470d'
-  latest-version-short: '98702e0'
+  latest-version: '643f50798460136b17f28ffbe41b87a53c79845c'
+  latest-version-short: '643f507'
   tarball-url-format: https://storage.googleapis.com/symbiflow-arch-defs-install/quicklogic-arch-defs-qlf-!!commit-sha1-short!!.tar.gz
-  comment: '2022-01-22 Merge pull request #799 from antmicro/dependabot-latest'
+  comment: '2022-01-23 Merge pull request #776 from antmicro/ql-automerge-dependabot'
 
 - type: gh
   subtype: pip
