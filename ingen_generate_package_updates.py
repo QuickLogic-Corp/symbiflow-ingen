@@ -98,7 +98,7 @@ def arch_defs_package_get_latest_commit(repo, branch):
 
     latest_commit_json = None
 
-    commits_json = git_get_latest_commits(repo, branch, 10)
+    commits_json = git_get_latest_commits(repo, branch, 200)
 
     for commit_json in commits_json['commits']:
 
