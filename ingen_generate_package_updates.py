@@ -26,6 +26,7 @@ from ruamel.yaml.scalarstring import SingleQuotedScalarString
 import json
 import subprocess
 import requests
+import re
 
 ##########################################################################################
 # represent None type as 'null' from here: https://stackoverflow.com/a/57207057/3379867
@@ -126,6 +127,25 @@ def arch_defs_package_get_latest_commit(repo, branch):
     latest_commit_sha1 = latest_commit_json['sha1']
     latest_commit_sha1_short = latest_commit_json['sha1-short']
     latest_commit_log = latest_commit_json['log']
+
+    # double check the URL with the GCP API too - because it seems like this gets generated for any branch?
+    # currently this is only a check, but not enforced until it is clear if this is indeed happening.
+    # from the GCP API, get the "latest" arch-defs package URL and its commit sha1
+    arch_defs_latest_commit_sha1_short = ""
+    arch_defs_tarball_query_url="https://storage.googleapis.com/symbiflow-arch-defs-install/latest-qlf"
+    arch_defs_tarball_response = requests.get(arch_defs_tarball_query_url)
+    arch_defs_tarball_url_latest = arch_defs_tarball_response.content.decode("UTF-8").strip()
+    arch_defs_matches = re.match("^.+quicklogic-arch-defs-qlf-(\w+).tar.gz$", arch_defs_tarball_url_latest)
+    if(arch_defs_matches != None): 
+        arch_defs_latest_commit_sha1_short = arch_defs_matches.group(1)
+        if(arch_defs_latest_commit_sha1_short != latest_commit_sha1_short):
+            print()
+            print('-------------------')
+            print("[INGEN] WARNING: latest from commit history and from GCP API don't match!!\n")
+            print("    from GCP API:", arch_defs_latest_commit_sha1_short)
+            print("from git commits:", latest_commit_sha1_short)
+            print('-------------------')
+            print()
 
 
     print()
