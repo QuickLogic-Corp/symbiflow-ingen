@@ -54,8 +54,8 @@ package_list:
   repo: https://github.com/YosysHQ/yosys
   use-version: latest
   working-version: '0.9_5636_ga0f5ba85'
-  latest-version: '0.14_37_g59738c09b'
-  comment: 'https://github.com/YosysHQ/yosys/commit/59738c09b'
+  latest-version: '0.14_40_g426f89fc6'
+  comment: 'https://github.com/YosysHQ/yosys/commit/426f89fc6'
 
 - type: conda
   subtype: gh-ci
@@ -64,8 +64,8 @@ package_list:
   repo: https://github.com/SymbiFlow/yosys-symbiflow-plugins
   use-version: latest
   working-version: '1.0.0_7_411_gb170f1d'
-  latest-version: '1.0.0_7_658_g3b18b54'
-  comment: 'https://github.com/SymbiFlow/yosys-symbiflow-plugins/commit/3b18b54'
+  latest-version: '1.0.0_7_668_gccc854b'
+  comment: 'https://github.com/SymbiFlow/yosys-symbiflow-plugins/commit/ccc854b'
 
 - type: conda
   subtype: gh-ci
@@ -84,8 +84,8 @@ package_list:
   repo: https://github.com/steveicarus/iverilog
   use-version: null
   working-version: null
-  latest-version: '0_8_5850_g540555fc'
-  comment: 'https://github.com/steveicarus/iverilog/commit/540555fc'
+  latest-version: '0_8_6067_g96a1cbf7'
+  comment: 'https://github.com/steveicarus/iverilog/commit/96a1cbf7'
 
 - type: conda
   subtype: null
