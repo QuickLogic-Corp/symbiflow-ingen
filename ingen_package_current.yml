@@ -54,8 +54,8 @@ package_list:
   repo: https://github.com/YosysHQ/yosys
   use-version: latest
   working-version: '0.9_5636_ga0f5ba85'
-  latest-version: '0.15_89_g2a76af9eb'
-  comment: 'https://github.com/YosysHQ/yosys/commit/2a76af9eb'
+  latest-version: '0.15_92_g8ca973718'
+  comment: 'https://github.com/YosysHQ/yosys/commit/8ca973718'
 
 - type: conda
   subtype: gh-ci
