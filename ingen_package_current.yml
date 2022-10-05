@@ -54,8 +54,8 @@ package_list:
   repo: https://github.com/YosysHQ/yosys
   use-version: latest
   working-version: '0.9_5636_ga0f5ba85'
-  latest-version: '0.21_24_ga9795c4fc'
-  comment: 'https://github.com/YosysHQ/yosys/commit/a9795c4fc'
+  latest-version: '0.21_28_gf5e2c0a49'
+  comment: 'https://github.com/YosysHQ/yosys/commit/f5e2c0a49'
 
 - type: conda
   subtype: gh-ci
@@ -84,8 +84,8 @@ package_list:
   repo: https://github.com/steveicarus/iverilog
   use-version: null
   working-version: null
-  latest-version: '0_8_6401_gfd69d4e09'
-  comment: 'https://github.com/steveicarus/iverilog/commit/fd69d4e09'
+  latest-version: '0_8_6418_g3b711ed78'
+  comment: 'https://github.com/steveicarus/iverilog/commit/3b711ed78'
 
 - type: conda
   subtype: null
@@ -156,7 +156,7 @@ package_list:
   channel: defaults
   use-version: null
   working-version: null
-  latest-version: '22.1.2'
+  latest-version: '22.2.2'
   comment: null
 
 # pip packages
