@@ -204,5 +204,5 @@ package_list:
   branch: master
   use-version: latest
   working-version: '7f6e3ab5a624674b2ccb56351d34a1852e976d62'
-  latest-version: 'aaf4c314a165b6185b0983019d8aae4d0d4db6cb'
-  comment: '2022-02-11 Merge pull request #25 from antmicro/checksum-fix'
+  latest-version: 'e3a1f819ed4dcde30d66058de5c134d96d460e18'
+  comment: '2022-10-19 Merge pull request #26 from antmicro/pcza/add-args'
