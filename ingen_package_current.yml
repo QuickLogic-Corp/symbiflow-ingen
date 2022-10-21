@@ -54,8 +54,8 @@ package_list:
   repo: https://github.com/YosysHQ/yosys
   use-version: latest
   working-version: '0.9_5636_ga0f5ba85'
-  latest-version: '0.22_37_g8859d801c'
-  comment: 'https://github.com/YosysHQ/yosys/commit/8859d801c'
+  latest-version: '0.22_39_gbe1a12595'
+  comment: 'https://github.com/YosysHQ/yosys/commit/be1a12595'
 
 - type: conda
   subtype: gh-ci
@@ -64,8 +64,8 @@ package_list:
   repo: https://github.com/SymbiFlow/yosys-symbiflow-plugins
   use-version: latest
   working-version: '1.0.0_7_411_gb170f1d'
-  latest-version: '1.0.0_7_1048_gb3430d2'
-  comment: 'https://github.com/SymbiFlow/yosys-symbiflow-plugins/commit/b3430d2'
+  latest-version: '1.0.0_7_1050_ge4d820f'
+  comment: 'https://github.com/SymbiFlow/yosys-symbiflow-plugins/commit/e4d820f'
 
 - type: conda
   subtype: gh-ci
